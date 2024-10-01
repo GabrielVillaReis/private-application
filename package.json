@@ -1,0 +1,38 @@
+{
+  "name": "private-application-manager",
+  "productName": "private-application-manager",
+  "version": "1.0.0",
+  "description": "My Electron application description",
+  "main": ".vite/build/main.js",
+  "scripts": {
+    "start": "electron-forge start",
+    "package": "electron-forge package",
+    "make": "electron-forge make",
+    "publish": "electron-forge publish",
+    "lint": "echo \"No linting configured\""
+  },
+  "devDependencies": {
+    "@electron-forge/cli": "^7.5.0",
+    "@electron-forge/maker-deb": "^7.5.0",
+    "@electron-forge/maker-rpm": "^7.5.0",
+    "@electron-forge/maker-squirrel": "^7.5.0",
+    "@electron-forge/maker-zip": "^7.5.0",
+    "@electron-forge/plugin-auto-unpack-natives": "^7.5.0",
+    "@electron-forge/plugin-fuses": "^7.5.0",
+    "@electron-forge/plugin-vite": "^7.5.0",
+    "@electron/fuses": "^1.8.0",
+    "@vitejs/plugin-vue": "^5.1.4",
+    "electron": "32.1.2",
+    "vite": "^5.4.8"
+  },
+  "keywords": [],
+  "author": "ppa",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.7.7",
+    "electron-squirrel-startup": "^1.0.1",
+    "fs": "^0.0.1-security",
+    "vue": "^3.5.10",
+    "vuetify": "^3.7.2"
+  }
+}
