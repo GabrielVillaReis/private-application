@@ -1,9 +1,8 @@
 const fs = require("fs");
 const path = require("path");
 const axios = require("axios");
-const { dir } = require("console");
 
-global.filePath;
+global.filePath = path.join(__dirname);
 global.token;
 global.apiPath = "https://api-v2.soundcloud.com/"; // /tracks/track_id /sets/set_id /resolve?url=url
 global.client_id;
@@ -35,12 +34,16 @@ async function generateLog(length, changes) {
   const now = new Date();
   const log = `Date:${now.toISOString()}\n${changes}${length} tracks stored\n`;
   console.log("\n" + log);
-  fs.appendFile(`${global.filePath}/log.txt`, `${log}\n`, (err) => {
-    if (err) {
-      console.error(err);
-      return;
+  fs.appendFile(
+    `${global.filePath}/sets/${global.set_title}/log.txt`,
+    `${log}\n`,
+    (err) => {
+      if (err) {
+        console.error(err);
+        return;
+      }
     }
-  });
+  );
 }
 
 // Formated track info that will be stored
@@ -72,8 +75,8 @@ async function compareData(data1, data2) {
   // filter which items in data1 are not in data2
   const added = data1
     .filter((item) => !data2Ids.has(item.id))
-    .map((item) => `${item.title} from ${item.user.username}`);
-  return `Tracks added : ${added}\nTracks removed : ${removed}\n`;
+    .map((item) => `ID: ${item.id}, ${item.title} from ${item.user.username}`);
+  return `Tracks added: ${added}\nTracks removed: ${removed}\n`;
 }
 
 // Start the cache with the values of the already saved sets
@@ -224,9 +227,7 @@ async function getSet(url) {
       setTracks = data.tracks.map((track) => track.id);
     }
   }
-  ensureDirectoryExistence(`sets/${global.set_title}`);
-  global.filePath = path.join(`sets/${global.set_title}`);
-
+  ensureDirectoryExistence(`${global.filePath}/sets/${global.set_title}`);
   return setTracks;
 }
 
@@ -257,21 +258,14 @@ async function storeSet(url) {
   // Gets the info of each track and saves in data
   let data = await getSetTracks(setTracks);
 
-  // Gets the info of each track and saves in trackdData
-  // for (const trackId of setTracks) {
-  //   let trackData = await getTrack(trackId);
-  //   data.push(trackData);
-  // }
-
+  const path = `${global.filePath}/sets/${global.set_title}/${global.set_title}.json`;
   // Filter null values for not found tracks
   data = data.filter((track) => track !== null);
   const jsonString = JSON.stringify(data, null, 2);
+  console.log(path);
   // Read the older file of the track to generate a log of what is removed and what is added, otherwise create a new file
   try {
-    let oldData = fs.readFileSync(
-      `${global.filePath}/${global.set_title}.json`,
-      "utf-8"
-    );
+    let oldData = fs.readFileSync(path, "utf-8");
     const jsonOldData = JSON.parse(oldData);
     let log = await compareData(data, jsonOldData);
     generateLog(data.length, log);
@@ -283,20 +277,16 @@ async function storeSet(url) {
   global.cache = global.cache.concat(data);
   await setCache();
   // Save the new set data in to the set folder as json file
-  fs.writeFileSync(
-    `${global.filePath}/${global.set_title}.json`,
-    jsonString,
-    (err) => {
-      if (err) {
-        console.error(err);
-        return;
-      } else {
-        console.log(
-          `Set ${global.set_title} saved successfully: ${data.length} songs out of ${setTracks.length}\n`
-        );
-      }
+  fs.writeFileSync(path, jsonString, (err) => {
+    if (err) {
+      console.error(err);
+      return;
+    } else {
+      console.log(
+        `Set ${global.set_title} saved successfully: ${data.length} songs out of ${setTracks.length}\n`
+      );
     }
-  );
+  });
 }
 
 // Get info of all the tracks in the ids array
@@ -396,7 +386,7 @@ async function downloadTrack(url) {
     // Obter informações sobre a faixa
     let name = url.split("/");
     name = `${name[3]} - ${name[4].replace(/-/g, " ")}`;
-    const directory = `mp3`;
+    const directory = `${global.filePath}/mp3`;
     ensureDirectoryExistence(directory);
     if (fs.existsSync(`${directory}/${name}.mp3`)) {
       console.log(`Music ${name} already exists in ${directory}/${name}.mp3`);
@@ -420,7 +410,7 @@ async function downloadTrack(url) {
 async function downloadSet(url) {
   let tracks;
   await getSet(url);
-  let dirPath = `${global.filePath}/${global.set_title}.json`;
+  let dirPath = `${global.filePath}/sets/${global.set_title}/${global.set_title}.json`;
   try {
     tracks = JSON.parse(fs.readFileSync(dirPath, "utf8"));
   } catch (error) {
@@ -483,12 +473,11 @@ async function downloadFullLibrary() {
 }
 
 async function getFullLibrary() {
-  await init().then(async () => {
-    for (set of global.sets) {
-      await storeSet(set);
-    }
-    await storeSet();
-  });
+  for (set of global.sets) {
+    await storeSet(set);
+  }
+  await storeSet();
+  console.log("all librarires saved");
 }
 
 async function downloadMP3(trackUrl) {
@@ -537,6 +526,20 @@ async function getMediaUrl(trackUrl) {
 
 //getFullLibrary();
 
+async function logOut() {
+  let resp = await fetch(
+    `https://api-auth.soundcloud.com/sign-out?client_id=${global.client_id}`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: global.token,
+      },
+    }
+  );
+  console.log(resp);
+  global.token = null;
+}
+
 module.exports = {
   downloadTrack,
   downloadSet,
@@ -551,4 +554,5 @@ module.exports = {
   storeSet,
   getFullLibrary,
   setAuthorizationToken,
+  logOut,
 };

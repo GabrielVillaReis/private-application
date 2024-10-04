@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, session } = require("electron");
+const { app, BrowserWindow, ipcMain, session, window } = require("electron");
 const path = require("node:path");
 const soundcloud = require("./soundcloud");
 
@@ -10,8 +10,8 @@ if (require("electron-squirrel-startup")) {
 const createWindow = () => {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
-    width: 800,
-    height: 600,
+    width: 1000,
+    height: 700,
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       nodeIntegration: true,
@@ -19,6 +19,17 @@ const createWindow = () => {
     },
   });
   mainWindow.setMenu(null);
+
+  // Desabilitar barra de rolagem via CSS
+  mainWindow.webContents.on("did-finish-load", () => {
+    mainWindow.webContents.insertCSS(
+      "html, body { overflow: hidden !important; }"
+    );
+  });
+
+  if (!global.token) {
+    loginSoundCloud();
+  }
 
   // and load the index.html of the app.
   if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
@@ -34,24 +45,30 @@ const createWindow = () => {
 };
 
 function loginSoundCloud() {
-  const loginWindow = new BrowserWindow({
-    width: 800,
+  const hiddenWindow = new BrowserWindow({
+    width: 400,
     height: 600,
+    show: false, // Janela invisível
     webPreferences: {
-      nodeIntegration: false,
+      preload: path.join(__dirname, "preload.js"),
+      nodeIntegration: true,
+      contextIsolation: true,
     },
   });
-  mainWindow.setMenu(null);
-  loginWindow.loadURL("https://soundcloud.com/signin");
+
+  hiddenWindow.loadURL("https://soundcloud.com/signin");
 
   // Capturar cookies ou tokens após o login bem-sucedido
-  loginWindow.webContents.on("did-navigate", async (event, url) => {
+  hiddenWindow.webContents.on("did-navigate", async (event, url) => {
     if (url.includes("https://soundcloud.com/discover")) {
       const result = await session.defaultSession.cookies.get({});
       const OAuth = result.find((cookie) => cookie.name === "oauth_token");
       await soundcloud.setAuthorizationToken(`OAuth ${OAuth.value}`);
-      loginWindow.close();
-      createWindow();
+      hiddenWindow.close();
+      await soundcloud.init();
+      return;
+    } else {
+      hiddenWindow.show();
     }
   });
 }
@@ -60,14 +77,14 @@ function loginSoundCloud() {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
-  loginSoundCloud();
+  createWindow();
   // soundcloud.init();
 
   // On OS X it's common to re-create a window in the app when the
   // dock icon is clicked and there are no other windows open.
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
-      loginSoundCloud();
+      createWindow();
     }
   });
 });
@@ -85,5 +102,9 @@ app.on("window-all-closed", () => {
 // code. You can also put them in separate files and import them here.
 // Função backend para buscar dados da API do SoundCloud
 ipcMain.handle("soundcloud-init", async (event) => {
-  await soundcloud.init();
+  return global.token;
+});
+
+ipcMain.handle("soundcloud-get-full-library", async (event) => {
+  await soundcloud.getFullLibrary();
 });
