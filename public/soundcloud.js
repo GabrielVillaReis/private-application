@@ -531,9 +531,9 @@ async function logOut() {
     `https://api-auth.soundcloud.com/sign-out?client_id=${global.client_id}`,
     {
       method: "POST",
-      headers: {
-        Authorization: global.token,
-      },
+      body: JSON.stringify({
+        access_token: global.token.split("OAuth ")[1],
+      }),
     }
   );
   console.log(resp);
