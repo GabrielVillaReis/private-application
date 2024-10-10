@@ -12,15 +12,23 @@
           label="Set"
           color="teal"
         />
+        <q-input dark outlined v-model="text" label="Outlined" />
       </div>
     </div>
-    <q-input dark outlined v-model="text" label="Outlined" />
     <button @click="DownloadSet">Download Set</button>
+    <q-input
+      filled
+      v-model="consoleOutput"
+      label="Console Logs"
+      type="textarea"
+      style="height: 200px"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from "vue";
+const consoleOutput = ref("");
 const text = ref(null);
 const sets = ref(null);
 const model = ref(null);
@@ -50,6 +58,9 @@ async function fetchData() {
 }
 
 onMounted(async () => {
+  await window.electron.ipcRenderer.on("log-message", (message) => {
+    consoleOutput.value += message + "\n";
+  });
   await fetchData();
 });
 </script>

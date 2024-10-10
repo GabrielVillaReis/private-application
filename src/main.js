@@ -7,7 +7,7 @@ if (require("electron-squirrel-startup")) {
   app.quit();
 }
 
-const createWindow = () => {
+const createWindow = async () => {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
     width: 1000,
@@ -26,6 +26,18 @@ const createWindow = () => {
       "html, body { overflow: hidden !important; }"
     );
   });
+
+  const originalConsoleLog = console.log;
+  console.log = async function (...args) {
+    // Usar JSON.stringify para converter objetos em strings JSON
+    const logMessage = args.map((arg) => arg).join("");
+
+    // Enviar a mensagem formatada para o app
+    mainWindow.webContents.send("log-message", logMessage.replace(/,/g, "\n"));
+
+    // Chamar o console.log original
+    originalConsoleLog.apply(console, args);
+  };
   if (!global.token) {
     loginSoundCloud();
   }

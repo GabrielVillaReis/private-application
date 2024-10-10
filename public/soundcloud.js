@@ -90,12 +90,11 @@ async function compareData(data1, data2) {
 async function initCache() {
   let files;
   let dirPath = path.join(__dirname, "sets");
-  console.log(dirPath);
   try {
     // Find the number of folders in the sets folder
     ensureDirectoryExistence(dirPath);
     files = fs.readdirSync(dirPath);
-    console.log("Sets already stored: ", files);
+    console.log("Sets already stored: ", files, "\n");
   } catch (err) {
     console.error(
       "Error in function initCache() fsreaddir creating new folder"
@@ -113,7 +112,6 @@ async function initCache() {
     }
     // Grants that every object is unique
     await setCache();
-    console.log(`${global.cache.length}: objects in cache`);
   } catch (err) {
     console.error(
       "Error in function initCache() fs.readFileSync, creating new file"
@@ -269,7 +267,6 @@ async function storeSet(url) {
   // Filter null values for not found tracks
   data = data.filter((track) => track !== null);
   const jsonString = JSON.stringify(data, null, 2);
-  console.log(path);
   // Read the older file of the track to generate a log of what is removed and what is added, otherwise create a new file
   try {
     let oldData = fs.readFileSync(path, "utf-8");
@@ -485,7 +482,7 @@ async function getFullLibrary() {
     await storeSet(set);
   }
   await storeSet();
-  console.log("all librarires saved");
+  console.log("Full library stored");
 }
 
 async function downloadMP3(trackUrl) {
