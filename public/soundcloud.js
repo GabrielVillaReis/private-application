@@ -19,6 +19,7 @@ async function init() {
   await getClientID();
   await getAllSets();
   await initCache();
+  await getFullLibrary();
   global.set_title = "";
   global.set_id = "";
 }
@@ -70,13 +71,19 @@ async function compareData(data1, data2) {
   // filter which items in data2 are not in data1
   const removed = data2
     .filter((item) => !data1Ids.has(item.id))
-    .map((item) => `${item.title} from ${item.user.username}`);
+    .map(
+      (item) =>
+        `ID: ${item.id}, ${item.title} from ${item.user.username}; link : ${item.media.transcodings[1].url}\n`
+    );
 
   // filter which items in data1 are not in data2
   const added = data1
     .filter((item) => !data2Ids.has(item.id))
-    .map((item) => `ID: ${item.id}, ${item.title} from ${item.user.username}`);
-  return `Tracks added: ${added}\nTracks removed: ${removed}\n`;
+    .map(
+      (item) =>
+        `ID: ${item.id}, ${item.title} from ${item.user.username}; link : ${item.media.transcodings[1].url}\n`
+    );
+  return `Tracks added:\n${added}\nTracks removed:\n${removed}\n`;
 }
 
 // Start the cache with the values of the already saved sets
@@ -423,6 +430,7 @@ async function downloadSet(url) {
   for (let url of tracks) {
     await downloadTrack(url);
   }
+  console.log(`Set Download Finished`);
 }
 
 async function addTrackToSet(trackId, setUrl) {

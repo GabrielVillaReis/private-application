@@ -1,7 +1,7 @@
 <template>
   <img v-if="!loaded" src="../src/assets/loading.gif" alt="Loading" />
   <div v-if="loaded">
-    <div dark class="q-pa-md" style="max-width: 300px">
+    <div class="q-pa-md" style="max-width: 300px">
       <div class="q-gutter-md">
         <q-btn flat color="teal" label="Logout" @click="logout" />
         <q-select
@@ -14,12 +14,14 @@
         />
       </div>
     </div>
-    <button @click="storeAllSets">Store All Sets</button>
+    <q-input dark outlined v-model="text" label="Outlined" />
+    <button @click="DownloadSet">Download Set</button>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from "vue";
+const text = ref(null);
 const sets = ref(null);
 const model = ref(null);
 const loaded = ref(false);
@@ -28,25 +30,27 @@ async function logout() {
   await window.electron.ipcRenderer.invoke("soundcloud-logout");
   window.location.reload();
 }
-async function storeAllSets() {
+async function DownloadSet() {
   const response = await window.electron.ipcRenderer.invoke(
-    "soundcloud-get-full-library"
+    "download-set",
+    text.value
   );
-  console.log("Stored all sets:", response);
+  console.log("Set Download Sucessfuly", response);
 }
 async function fetchData() {
-  while (sets.value == null) {
-    sets.value = await window.electron.ipcRenderer.invoke("soundcloud-init");
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+  const result = await window.electron.ipcRenderer.invoke("soundcloud-init");
+
+  if (result) {
+    sets.value = result.map((url) => url.split("sets/")[1].split("/")[0]);
+    sets.value.push("Liked Tracks");
+    sets.value.push("all");
+
+    loaded.value = true;
   }
-  sets.value = sets.value.map((url) => url.split("sets/")[1].split("/")[0]);
-  sets.value.push("Liked Tracks");
-  loaded.value = true;
 }
 
 onMounted(async () => {
   await fetchData();
-  this.$q.dark.set(true);
 });
 </script>
 

@@ -26,6 +26,9 @@ const createWindow = () => {
       "html, body { overflow: hidden !important; }"
     );
   });
+  if (!global.token) {
+    loginSoundCloud();
+  }
 
   // and load the index.html of the app.
   if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
@@ -36,15 +39,11 @@ const createWindow = () => {
     );
   }
 
-  if (!global.token) {
-    loginSoundCloud();
-  }
-
   // Open the DevTools.
   mainWindow.webContents.openDevTools();
 };
 
-function loginSoundCloud() {
+async function loginSoundCloud() {
   const hiddenWindow = new BrowserWindow({
     width: 800,
     height: 600,
@@ -102,6 +101,8 @@ app.on("window-all-closed", () => {
 // code. You can also put them in separate files and import them here.
 // Função backend para buscar dados da API do SoundCloud
 ipcMain.handle("soundcloud-init", async (event) => {
+  while (!global.sets)
+    await new Promise((resolve) => setTimeout(resolve, 1000));
   return global.sets;
 });
 
@@ -109,6 +110,6 @@ ipcMain.handle("soundcloud-logout", async (event) => {
   await soundcloud.logOut();
 });
 
-ipcMain.handle("soundcloud-get-full-library", async (event) => {
-  await soundcloud.getFullLibrary();
+ipcMain.handle("download-set", async (event, url) => {
+  await soundcloud.downloadSet(url);
 });
